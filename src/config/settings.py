@@ -1,6 +1,7 @@
 """Configuration management using Pydantic Settings."""
 
 from pathlib import Path
+from typing import Any
 
 from pydantic_settings import BaseSettings
 from pydantic_settings import SettingsConfigDict

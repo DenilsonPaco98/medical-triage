@@ -60,11 +60,11 @@ async def predict(request: PredictionRequest) -> PredictionResponse:
         inference_time = (time.time() - start_time) * 1000
 
         # Type-safe extraction from result dict
-        result_text = str(result["text"]) if isinstance(result["text"], (str, float)) else str(result["text"])
-        result_sentiment = str(result["sentiment"]) if isinstance(result["sentiment"], (str, float)) else str(result["sentiment"])
-        result_confidence = float(result["confidence"]) if isinstance(result["confidence"], (int, float)) else float(result["confidence"])
+        result_text = str(result["text"])
+        result_sentiment = str(result["sentiment"])
+        result_confidence = float(result["confidence"])
         result_scores = result["scores"]
-        
+
         if not isinstance(result_scores, dict):
             result_scores = {"negative": 0.0, "neutral": 0.0, "positive": 0.0}
 
