@@ -3,7 +3,7 @@
 import logging
 from pathlib import Path
 
-import pandas as pd
+import pandas as pd  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ class DatasetPreparation:
 
         try:
             logger.info(f"Downloading dataset {self.dataset_name} from Kaggle...")
-            import kagglehub
+            import kagglehub  # type: ignore[import-untyped]
 
             path = kagglehub.dataset_download(self.dataset_name)
             logger.info(f"Downloaded to {path}")

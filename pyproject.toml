@@ -198,10 +198,15 @@ module = [
     "evidently.*",
     "great_expectations.*",
     "streamlit.*",
+    "sklearn.*",
+    "pandas.*",
+    "kagglehub.*",
 ]
 ignore_missing_imports = true
 
-[tool.mypy.overrides.per_module_options."tests.*"]
+[[tool.mypy.overrides]]
+module = "tests.*"
+ignore_missing_imports = true
 disallow_untyped_defs = false
 disallow_untyped_calls = false
 
