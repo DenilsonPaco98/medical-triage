@@ -2,7 +2,6 @@
 
 import logging
 import time
-from typing import Any
 
 from fastapi import APIRouter
 from fastapi import HTTPException
@@ -12,6 +11,7 @@ from src.api.schemas import PredictionRequest
 from src.api.schemas import PredictionResponse
 from src.api.schemas import ScoresResponse
 from src.config import settings
+from src.models.predict import PredictionResult
 from src.models.predict import SentimentPredictor
 
 logger = logging.getLogger(__name__)
@@ -84,7 +84,7 @@ async def predict(request: PredictionRequest) -> PredictionResponse:
 
 
 @router.post("/predict-batch")
-async def predict_batch(texts: list[str]) -> list[dict[str, Any]]:
+async def predict_batch(texts: list[str]) -> list[PredictionResult]:
     """Predict sentiment for multiple texts.
 
     Args:
