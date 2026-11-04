@@ -1,6 +1,6 @@
 # GitHub Actions - Test Workflow
 
-name: Tests
+name: Tests_MlOps
 
 on:
   push:
