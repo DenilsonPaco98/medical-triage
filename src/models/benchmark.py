@@ -137,7 +137,7 @@ class LatencyBenchmark:
     def compare(
         self,
         pytorch_model_path: Path,
-        onnx_model_path: Optional[Path] = None,
+        onnx_model_path: Path | None = None,
     ) -> dict:
         """Compare PyTorch vs ONNX latency.
 

@@ -2,6 +2,7 @@
 
 import logging
 from pathlib import Path
+from typing import ClassVar
 
 import torch
 from transformers import AutoTokenizer
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 class SentimentPredictor:
     """Sentiment prediction using fine-tuned BERT model."""
 
-    LABELS: list[str] = ["negative", "neutral", "positive"]
+    LABELS: ClassVar[list[str]] = ["negative", "neutral", "positive"]
 
     def __init__(
         self,

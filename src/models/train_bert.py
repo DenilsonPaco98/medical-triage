@@ -3,6 +3,7 @@
 import logging
 import time
 from pathlib import Path
+from typing import ClassVar
 
 import mlflow
 import torch
@@ -69,7 +70,7 @@ class SentimentModel(nn.Module):
 class BertTrainer:
     """Trainer for BERT sentiment classification."""
 
-    LABELS: list[str] = ["negative", "neutral", "positive"]
+    LABELS: ClassVar[list[str]] = ["negative", "neutral", "positive"]
 
     def __init__(
         self,

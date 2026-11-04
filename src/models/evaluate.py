@@ -18,7 +18,7 @@ class ModelEvaluator:
     def calculate_metrics(
         y_true: list[int],
         y_pred: list[int],
-        target_names: Optional[list[str]] = None,
+        target_names: list[str] | None = None,
     ) -> dict[str, float]:
         """Calculate evaluation metrics.
 

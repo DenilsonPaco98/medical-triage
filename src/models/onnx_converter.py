@@ -37,8 +37,8 @@ class ONNXConverter:
             Path to ONNX model
         """
         try:
-              from onnxruntime.quantization import QuantType
-              from onnxruntime.quantization import quantize_dynamic
+            from onnxruntime.quantization import QuantType
+            from onnxruntime.quantization import quantize_dynamic
 
             # Load model
             from src.models.train_bert import SentimentModel
