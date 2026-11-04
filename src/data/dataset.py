@@ -39,9 +39,9 @@ class DatasetPreparation:
 
         try:
             logger.info(f"Downloading dataset {self.dataset_name} from Kaggle...")
-            import kagglehub  # type: ignore[import-untyped]
+            import kagglehub
 
-            path = kagglehub.dataset_download(self.dataset_name)  # type: ignore[no-untyped-call]
+            path = kagglehub.dataset_download(self.dataset_name)
             logger.info(f"Downloaded to {path}")
 
             # Find and copy CSV file

@@ -5,6 +5,7 @@ import time
 from pathlib import Path
 from typing import Any
 from typing import ClassVar
+from typing import cast
 
 import mlflow
 import torch
@@ -50,7 +51,7 @@ class SentimentModel(nn.Module):
             Logits for classification
         """
         outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
-        return outputs.logits
+        return cast(torch.Tensor, outputs.logits)
 
     def predict(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         """Get predictions (probabilities).

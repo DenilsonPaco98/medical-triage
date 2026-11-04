@@ -10,6 +10,7 @@ from fastapi import HTTPException
 from src.api.schemas import HealthResponse
 from src.api.schemas import PredictionRequest
 from src.api.schemas import PredictionResponse
+from src.api.schemas import ScoresResponse
 from src.config import settings
 from src.models.predict import SentimentPredictor
 
@@ -62,17 +63,18 @@ async def predict(request: PredictionRequest) -> PredictionResponse:
         # Type-safe extraction from result dict
         result_text = str(result["text"])
         result_sentiment = str(result["sentiment"])
-        result_confidence = float(result["confidence"])
+        result_confidence = result["confidence"]
         result_scores = result["scores"]
-
-        if not isinstance(result_scores, dict):
-            result_scores = {"negative": 0.0, "neutral": 0.0, "positive": 0.0}
 
         return PredictionResponse(
             text=result_text,
             sentiment=result_sentiment,
             confidence=result_confidence,
-            scores=result_scores,  # type: ignore[arg-type]
+            scores=ScoresResponse(
+                negative=result_scores["negative"],
+                neutral=result_scores["neutral"],
+                positive=result_scores["positive"],
+            ),
             inference_time_ms=inference_time,
         )
 

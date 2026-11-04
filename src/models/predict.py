@@ -3,6 +3,7 @@
 import logging
 from pathlib import Path
 from typing import ClassVar
+from typing import TypedDict
 
 import torch
 from transformers import AutoTokenizer
@@ -10,6 +11,15 @@ from transformers import AutoTokenizer
 from src.models.train_bert import SentimentModel
 
 logger = logging.getLogger(__name__)
+
+
+class PredictionResult(TypedDict):
+    """Result of a single sentiment prediction."""
+
+    text: str
+    sentiment: str
+    confidence: float
+    scores: dict[str, float]
 
 
 class SentimentPredictor:
@@ -41,7 +51,7 @@ class SentimentPredictor:
 
         self.model.eval()
 
-    def predict(self, text: str) -> dict[str, str | float | dict[str, float]]:
+    def predict(self, text: str) -> PredictionResult:
         """Predict sentiment for a single text.
 
         Args:
@@ -80,7 +90,7 @@ class SentimentPredictor:
             },
         }
 
-    def predict_batch(self, texts: list[str]) -> list[dict[str, float | str]]:
+    def predict_batch(self, texts: list[str]) -> list[PredictionResult]:
         """Predict sentiment for multiple texts.
 
         Args:

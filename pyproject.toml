@@ -194,22 +194,12 @@ module = [
     "torch.*",
     "duckdb.*",
     "mlflow.*",
-    "prefect.*",
-    "evidently.*",
-    "great_expectations.*",
-    "streamlit.*",
     "sklearn.*",
     "pandas.*",
     "kagglehub.*",
     "onnxruntime.*",
 ]
 ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "tests.*"
-ignore_missing_imports = true
-disallow_untyped_defs = false
-disallow_untyped_calls = false
 
 #################################################################################
 # PYTEST - Testing                                                             #

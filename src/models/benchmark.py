@@ -52,7 +52,7 @@ class LatencyBenchmark:
             model.load_state_dict(torch.load(model_path, map_location="cpu"))
         model.eval()
 
-        latencies = []
+        latencies: list[float] = []
 
         with torch.no_grad():
             for _ in range(num_iterations):
@@ -69,14 +69,14 @@ class LatencyBenchmark:
                     _ = model(inputs["input_ids"], inputs["attention_mask"])
                     latencies.append((time.time() - start) * 1000)
 
-        latencies = np.array(latencies)
+        latency_array = np.asarray(latencies)
         return {
-            "min_ms": float(latencies.min()),
-            "max_ms": float(latencies.max()),
-            "mean_ms": float(latencies.mean()),
-            "std_ms": float(latencies.std()),
-            "p95_ms": float(np.percentile(latencies, 95)),
-            "p99_ms": float(np.percentile(latencies, 99)),
+            "min_ms": float(latency_array.min()),
+            "max_ms": float(latency_array.max()),
+            "mean_ms": float(latency_array.mean()),
+            "std_ms": float(latency_array.std()),
+            "p95_ms": float(np.percentile(latency_array, 95)),
+            "p99_ms": float(np.percentile(latency_array, 99)),
         }
 
     def benchmark_onnx(
@@ -99,7 +99,7 @@ class LatencyBenchmark:
             logger.info("Benchmarking ONNX model...")
 
             session = ort.InferenceSession(str(onnx_model_path))
-            latencies = []
+            latencies: list[float] = []
 
             for _ in range(num_iterations):
                 for text in self.test_texts:
@@ -121,14 +121,14 @@ class LatencyBenchmark:
                     )
                     latencies.append((time.time() - start) * 1000)
 
-            latencies = np.array(latencies)
+            latency_array = np.asarray(latencies)
             return {
-                "min_ms": float(latencies.min()),
-                "max_ms": float(latencies.max()),
-                "mean_ms": float(latencies.mean()),
-                "std_ms": float(latencies.std()),
-                "p95_ms": float(np.percentile(latencies, 95)),
-                "p99_ms": float(np.percentile(latencies, 99)),
+                "min_ms": float(latency_array.min()),
+                "max_ms": float(latency_array.max()),
+                "mean_ms": float(latency_array.mean()),
+                "std_ms": float(latency_array.std()),
+                "p95_ms": float(np.percentile(latency_array, 95)),
+                "p99_ms": float(np.percentile(latency_array, 99)),
             }
 
         except ImportError:
@@ -149,7 +149,7 @@ class LatencyBenchmark:
         Returns:
             Comparison results with speedup factor
         """
-        results = {}
+        results: dict[str, dict[str, float] | float] = {}
 
         # Benchmark PyTorch
         pytorch_metrics = self.benchmark_pytorch(pytorch_model_path)
