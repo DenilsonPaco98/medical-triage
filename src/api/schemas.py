@@ -21,6 +21,12 @@ class PredictionRequest(BaseModel):
     model_version: str | None = Field(None, description="Model version to use")
 
 
+class BatchPredictionRequest(BaseModel):
+    """Request schema for batch sentiment prediction."""
+
+    texts: list[str] = Field(..., min_length=1, description="Texts to analyze")
+
+
 class ScoresResponse(BaseModel):
     """Sentiment scores."""
 

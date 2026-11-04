@@ -3,10 +3,10 @@
 import logging
 from pathlib import Path
 from typing import ClassVar
-from typing import TypedDict
 
 import torch
 from transformers import AutoTokenizer
+from typing_extensions import TypedDict
 
 from src.models.train_bert import SentimentModel
 

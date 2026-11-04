@@ -5,7 +5,11 @@ import time
 
 from fastapi import APIRouter
 from fastapi import HTTPException
+from fastapi import Response
+from prometheus_client import CONTENT_TYPE_LATEST
+from prometheus_client import generate_latest
 
+from src.api.schemas import BatchPredictionRequest
 from src.api.schemas import HealthResponse
 from src.api.schemas import PredictionRequest
 from src.api.schemas import PredictionResponse
@@ -84,7 +88,7 @@ async def predict(request: PredictionRequest) -> PredictionResponse:
 
 
 @router.post("/predict-batch")
-async def predict_batch(texts: list[str]) -> list[PredictionResult]:
+async def predict_batch(request: BatchPredictionRequest) -> list[PredictionResult]:
     """Predict sentiment for multiple texts.
 
     Args:
@@ -94,13 +98,16 @@ async def predict_batch(texts: list[str]) -> list[PredictionResult]:
         List of predictions
     """
     try:
-        if not texts:
-            raise HTTPException(status_code=400, detail="No texts provided")
-
         predictor = get_predictor()
-        results = predictor.predict_batch(texts)
+        results = predictor.predict_batch(request.texts)
         return results
 
     except Exception as e:
         logger.error(f"Error in batch prediction: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/metrics", include_in_schema=False)
+async def metrics() -> Response:
+    """Expose Prometheus metrics."""
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)

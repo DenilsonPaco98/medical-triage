@@ -8,6 +8,27 @@ from src.api.app import app
 client = TestClient(app)
 
 
+class FakePredictor:
+    """Deterministic predictor for API endpoint tests."""
+
+    def predict(self, text: str) -> dict[str, object]:
+        return {
+            "text": text,
+            "sentiment": "positive",
+            "confidence": 0.9,
+            "scores": {"negative": 0.02, "neutral": 0.08, "positive": 0.9},
+        }
+
+    def predict_batch(self, texts: list[str]) -> list[dict[str, object]]:
+        return [self.predict(text) for text in texts]
+
+
+@pytest.fixture(autouse=True)
+def mock_predictor(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Avoid model downloads and inference during API tests."""
+    monkeypatch.setattr("src.api.routes.get_predictor", lambda: FakePredictor())
+
+
 class TestHealthEndpoint:
     """Testes para endpoint /health."""
 
@@ -15,7 +36,7 @@ class TestHealthEndpoint:
         """Health endpoint deve retornar 200."""
         response = client.get("/health")
         assert response.status_code == 200
-        assert response.json() == {"status": "healthy"}
+        assert response.json() == {"status": "healthy", "version": "0.2.0"}
 
 
 class TestPredictEndpoint:
@@ -28,10 +49,11 @@ class TestPredictEndpoint:
 
         assert response.status_code == 200
         data = response.json()
-        assert "prediction" in data
+        assert data["text"] == payload["text"]
+        assert data["sentiment"] == "positive"
         assert "confidence" in data
-        assert data["prediction"] in [0, 1, 2]  # 3 classes
         assert 0 <= data["confidence"] <= 1
+        assert set(data["scores"]) == {"negative", "neutral", "positive"}
 
     def test_predict_empty_text_raises_error(self):
         """Deve retornar erro para texto vazio."""
@@ -53,8 +75,8 @@ class TestPredictEndpoint:
 
         assert response.status_code == 200
         data = response.json()
-        assert "predictions" in data
-        assert len(data["predictions"]) == 3
+        assert len(data) == 3
+        assert all(item["sentiment"] == "positive" for item in data)
 
 
 class TestMetricsEndpoint:
