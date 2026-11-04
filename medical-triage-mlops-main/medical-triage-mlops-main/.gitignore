@@ -1,0 +1,72 @@
+# Dados brutos (reproduzíveis via src/binary_triage/dataset.py)
+data/raw/*
+!data/raw/.gitkeep
+
+# Modelos e relatórios de treino (reproduzíveis via src/binary_triage/train.py)
+models/*.joblib
+models/reports/
+
+# Artefatos ONNX (reproduzíveis via src/binary_triage/export_onnx.py)
+models/*.onnx
+
+# Metadados locais do Airflow (AIRFLOW_HOME usado para testar DAGs localmente)
+.airflow/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[codz]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+build/
+dist/
+eggs/
+.eggs/
+*.egg-info/
+*.egg
+MANIFEST
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+.hypothesis/
+.pytest_cache/
+
+# Environments
+.env
+.envrc
+.venv
+
+# uv
+#   Generally recommended to include uv.lock in version control for
+#   reproducibility. Uncomment for libraries where you want consumers
+#   to resolve their own dependencies.
+# uv.lock
+
+# Ruff
+.ruff_cache/
+
+# Type checkers
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+
+# Documentation build output
+site/
+
+# IDE files
+# .idea/
+# .vscode/
+
+# Notas e planos pessoais de decisões do projeto (não versionados)
+docs/_notas-decisoes-projeto.md
+/vamos-organizar-tudo-isso-tidy-abelson.md

@@ -1,0 +1,276 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "medical-review-sentiment-mlops"
+version = "0.2.0"
+description = "Análise de Sentimento em Reviews Médicos com Fine-tuning BERT, MLflow, Prefect, Streamlit e DuckDB. Enterprise-grade MLOps pipeline. FIAP ML Engineering - Phase 4."
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+license = {text = "MIT"}
+authors = [
+    {name = "Denilson Paco", email = "denilson.paco98@gmail.com"}
+]
+maintainers = [
+    {name = "Denilson Paco", email = "denilson.paco98@gmail.com"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Typing :: Typed",
+]
+
+dependencies = [
+    # Core ML/Deep Learning
+    "torch>=2.2.0",
+    "transformers>=4.40.0",
+    "scikit-learn>=1.4.0",
+    "numpy>=1.24.0",
+    "pandas>=2.1.0",
+    
+    # Data Management
+    "pyarrow>=15.0.0",
+    
+    # Experiment Tracking
+    "mlflow>=2.10.0",
+    
+    # Orchestration (Airflow)
+    "apache-airflow>=2.8.0",
+    "apache-airflow-providers-http>=4.7.0",
+    
+    # ONNX Optimization
+    "onnx>=1.15.0",
+    "onnxruntime>=1.17.0",
+    
+    # API & Web
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    
+    # Monitoring & Observability
+    "prometheus-client>=0.19.0",
+    "python-dotenv>=1.0.0",
+    
+    # CLI & Utilities
+    "typer>=0.9.0",
+    "rich>=13.7.0",
+    "loguru>=0.7.2",
+    
+    # Data Download
+    "kagglehub>=0.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-xdist>=3.5.0",
+    "pytest-watch>=4.2.0",
+    "coverage[toml]>=7.3.0",
+    "ipykernel>=7.0.0",
+    "ipython>=8.18.0",
+    "jupyter>=1.0.0",
+    "nbconvert>=7.14.0",
+    "pre-commit>=3.5.0",
+]
+
+lint = [
+    "ruff>=0.2.0",
+    "mypy>=1.7.0",
+    "types-pyyaml",
+    "types-requests",
+    "types-setuptools",
+]
+
+ml = [
+    "torch>=2.2.0",
+    "transformers>=4.40.0",
+    "scikit-learn>=1.4.0",
+    "onnx>=1.15.0",
+    "onnxruntime>=1.17.0",
+    "mlflow>=2.10.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/DenilsonPaco98/medical-review-sentiment-mlops"
+Repository = "https://github.com/DenilsonPaco98/medical-review-sentiment-mlops.git"
+Issues = "https://github.com/DenilsonPaco98/medical-review-sentiment-mlops/issues"
+Documentation = "https://github.com/DenilsonPaco98/medical-review-sentiment-mlops/blob/main/docs"
+
+[project.scripts]
+medical-review-sentiment = "src.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+#################################################################################
+# RUFF - Linting & Formatting                                                  #
+#################################################################################
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+    "*.egg-info",
+    "docs/",
+    "notebooks/",
+    ".pytest_cache",
+    "mlruns/",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "I",      # isort (import sorting)
+    "N",      # pep8-naming
+    "UP",     # pyupgrade
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "ARG",    # flake8-unused-arguments
+    "SIM",    # flake8-simplify
+    "T20",    # flake8-print
+    "RUF",    # Ruff-specific rules
+]
+
+ignore = [
+    "E501",   # line-too-long (handled by formatter)
+    "N806",   # variable-in-function-name
+    "N812",   # lowercase-module-name
+]
+
+# Allow unused variables when prefixed with `_`
+unused-ignore-union-sentinel = true
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["T20"]
+"notebooks/**" = ["T20", "F841"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+force-single-line = true
+
+[tool.ruff.lint.flake8-builtins]
+builtins-allowed = ["id", "type"]
+
+#################################################################################
+# MYPY - Type Checking                                                         #
+#################################################################################
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_calls = true
+check_untyped_defs = true
+no_implicit_optional = true
+show_error_codes = true
+show_column_numbers = true
+
+[[tool.mypy.overrides]]
+module = [
+    "transformers.*",
+    "torch.*",
+    "duckdb.*",
+    "mlflow.*",
+    "prefect.*",
+    "evidently.*",
+    "great_expectations.*",
+    "streamlit.*",
+]
+ignore_missing_imports = true
+
+[tool.mypy.overrides.per_module_options."tests.*"]
+disallow_untyped_defs = false
+disallow_untyped_calls = false
+
+#################################################################################
+# PYTEST - Testing                                                             #
+#################################################################################
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --strict-markers --tb=short"
+markers = [
+    "unit: unit tests",
+    "integration: integration tests",
+    "slow: slow tests",
+    "requires_gpu: tests requiring GPU",
+]
+asyncio_mode = "auto"
+asyncio_default_fixture_scope = "function"
+
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/site-packages/*",
+    "*/tests/*",
+    "*/__init__.py",
+    "*/cli.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+precision = 2
+show_missing = true
+skip_covered = false
+
+#################################################################################
+# TOOL CONFIGURATIONS                                                          #
+#################################################################################
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+multi_line_mode = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+skip_gitignore = true
+
+[tool.pylint.messages_control]
+disable = ["C0330", "C0326"]
+
+[tool.pylint.format]
+max-line-length = 100
