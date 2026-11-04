@@ -169,7 +169,7 @@ known-first-party = ["src"]
 force-single-line = true
 
 [tool.ruff.lint.flake8-builtins]
-builtins-allowed = ["id", "type"]
+builtins-ignorelist = ["id", "type"]
 
 #################################################################################
 # MYPY - Type Checking                                                         #
