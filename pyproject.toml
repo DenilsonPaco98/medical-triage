@@ -157,9 +157,6 @@ ignore = [
     "N812",   # lowercase-module-name
 ]
 
-# Allow unused variables when prefixed with `_`
-unused-ignore-union-sentinel = true
-
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["T20"]
 "notebooks/**" = ["T20", "F841"]
