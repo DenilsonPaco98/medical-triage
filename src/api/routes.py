@@ -69,7 +69,7 @@ async def predict(request: PredictionRequest) -> PredictionResponse:
 
     except Exception as e:
         logger.error(f"Error in prediction: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/predict-batch")
@@ -92,7 +92,4 @@ async def predict_batch(texts: list[str]) -> list[dict[str, Any]]:
 
     except Exception as e:
         logger.error(f"Error in batch prediction: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-from typing import Any
+        raise HTTPException(status_code=500, detail=str(e)) from e

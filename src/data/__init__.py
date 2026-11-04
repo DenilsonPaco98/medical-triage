@@ -3,4 +3,4 @@
 from src.data.dataset import DatasetPreparation
 from src.data.preprocessing import DataPreprocessor
 
-__all__ = ["DatasetPreparation", "DataPreprocessor"]
+__all__ = ["DataPreprocessor", "DatasetPreparation"]

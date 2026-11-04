@@ -2,7 +2,6 @@
 
 import logging
 from pathlib import Path
-from typing import Optional
 
 import pandas as pd
 
@@ -12,7 +11,7 @@ logger = logging.getLogger(__name__)
 class DatasetPreparation:
     """Handle dataset download and preparation from Kaggle."""
 
-    def __init__(self, dataset_name: str = "d7c7b0c7/medical-reviews", output_dir: Optional[Path] = None) -> None:
+    def __init__(self, dataset_name: str = "d7c7b0c7/medical-reviews", output_dir: Path | None = None) -> None:
         """Initialize dataset preparation.
 
         Args:

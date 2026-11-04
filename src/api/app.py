@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> Any:
+async def lifespan(_app: FastAPI) -> Any:
     """Application lifespan context manager.
 
     This ensures the model is loaded on startup and any cleanup is done on shutdown.

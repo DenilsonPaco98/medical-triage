@@ -2,7 +2,6 @@
 
 import logging
 from pathlib import Path
-from typing import Optional
 
 import torch
 from transformers import AutoTokenizer
@@ -16,7 +15,7 @@ class ONNXConverter:
     def __init__(
         self,
         model_path: Path,
-        output_path: Optional[Path] = None,
+        output_path: Path | None = None,
         model_name: str = "distilbert-base-uncased",
     ) -> None:
         """Initialize converter.
@@ -38,12 +37,8 @@ class ONNXConverter:
             Path to ONNX model
         """
         try:
-            import onnx
-            import onnxruntime as ort
-            from onnxruntime.quantization import quantize_dynamic
-            from onnxruntime.quantization import QuantType
-
-            logger.info(f"Converting model from {self.model_path} to ONNX...")
+              from onnxruntime.quantization import QuantType
+              from onnxruntime.quantization import quantize_dynamic
 
             # Load model
             from src.models.train_bert import SentimentModel
@@ -82,7 +77,7 @@ class ONNXConverter:
 
             # Quantize for optimization
             quantized_path = self.output_path.parent / "sentiment_model_quantized.onnx"
-            logger.info(f"Quantizing model for optimization...")
+            logger.info("Quantizing model for optimization...")
 
             quantize_dynamic(
                 str(self.output_path),

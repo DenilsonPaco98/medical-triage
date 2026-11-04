@@ -8,10 +8,9 @@ from src.models.train_bert import BertTrainer
 from src.models.train_bert import SentimentModel
 
 __all__ = [
-    "SentimentModel",
-    "BertTrainer",
-    "SentimentPredictor",
-    "ModelEvaluator",
-    "ONNXConverter",
-    "LatencyBenchmark",
-]
+      "BertTrainer",
+      "LatencyBenchmark",
+      "ModelEvaluator",
+      "ONNXConverter",
+      "SentimentModel",
+      "SentimentPredictor",

@@ -1,7 +1,6 @@
 """Model evaluation utilities."""
 
 import logging
-from typing import Optional
 
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
@@ -31,7 +30,7 @@ class ModelEvaluator:
         Returns:
             Dictionary of metrics
         """
-        accuracy = sum(y_t == y_p for y_t, y_p in zip(y_true, y_pred)) / len(y_true)
+        accuracy = sum(y_t == y_p for y_t, y_p in zip(y_true, y_pred, strict=False)) / len(y_true)
         precision = precision_score(y_true, y_pred, average="weighted", zero_division=0)
         recall = recall_score(y_true, y_pred, average="weighted", zero_division=0)
         f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)

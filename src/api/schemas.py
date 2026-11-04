@@ -1,7 +1,5 @@
 """API request/response schemas."""
 
-from typing import Optional
-
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
@@ -20,7 +18,7 @@ class PredictionRequest(BaseModel):
     )
 
     text: str = Field(..., min_length=1, max_length=2000, description="Text to analyze")
-    model_version: Optional[str] = Field(None, description="Model version to use")
+    model_version: str | None = Field(None, description="Model version to use")
 
 
 class ScoresResponse(BaseModel):

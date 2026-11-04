@@ -2,6 +2,7 @@
 
 import pytest
 from fastapi.testclient import TestClient
+
 from src.api.app import app
 
 client = TestClient(app)
@@ -24,7 +25,7 @@ class TestPredictEndpoint:
         """Deve fazer predicao para texto individual."""
         payload = {"text": "Great doctor! Very professional."}
         response = client.post("/predict", json=payload)
-        
+
         assert response.status_code == 200
         data = response.json()
         assert "prediction" in data
@@ -36,7 +37,7 @@ class TestPredictEndpoint:
         """Deve retornar erro para texto vazio."""
         payload = {"text": ""}
         response = client.post("/predict", json=payload)
-        
+
         assert response.status_code in [400, 422]
 
     def test_predict_batch_multiple_texts(self):
@@ -49,7 +50,7 @@ class TestPredictEndpoint:
             ]
         }
         response = client.post("/predict-batch", json=payload)
-        
+
         assert response.status_code == 200
         data = response.json()
         assert "predictions" in data

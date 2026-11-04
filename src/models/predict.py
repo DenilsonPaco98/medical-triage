@@ -2,7 +2,6 @@
 
 import logging
 from pathlib import Path
-from typing import Optional
 
 import torch
 from transformers import AutoTokenizer
@@ -15,11 +14,11 @@ logger = logging.getLogger(__name__)
 class SentimentPredictor:
     """Sentiment prediction using fine-tuned BERT model."""
 
-    LABELS = ["negative", "neutral", "positive"]
+    LABELS: list[str] = ["negative", "neutral", "positive"]
 
     def __init__(
         self,
-        model_path: Optional[Path] = None,
+        model_path: Path | None = None,
         model_name: str = "distilbert-base-uncased",
         device: str = "cuda",
     ) -> None:
