@@ -1,6 +1,7 @@
 """MLflow utilities."""
 
 import logging
+from typing import Any
 
 import mlflow
 
@@ -9,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 def log_model_metadata(
     model_name: str,
-    params: dict[str, any],
+    params: dict[str, Any],
     metrics: dict[str, float],
     tags: dict[str, str] | None = None,
 ) -> None:

@@ -3,6 +3,7 @@
 import logging
 import time
 from pathlib import Path
+from typing import Any
 from typing import ClassVar
 
 import mlflow
@@ -98,7 +99,7 @@ class BertTrainer:
         self.model = SentimentModel(model_name=model_name, num_labels=len(self.LABELS)).to(device)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-    def train_epoch(self, train_loader: DataLoader) -> float:
+    def train_epoch(self, train_loader: DataLoader[Any]) -> float:
         """Train for one epoch.
 
         Args:
@@ -120,14 +121,14 @@ class BertTrainer:
             logits = self.model(input_ids, attention_mask)
             loss = F.cross_entropy(logits, labels)
 
-            loss.backward()
+            loss.backward()  # type: ignore[no-untyped-call]
             self.optimizer.step()
 
             total_loss += loss.item()
 
         return total_loss / len(train_loader)
 
-    def evaluate(self, eval_loader: DataLoader) -> dict[str, float]:
+    def evaluate(self, eval_loader: DataLoader[Any]) -> dict[str, float]:
         """Evaluate on validation/test set.
 
         Args:
@@ -171,8 +172,8 @@ class BertTrainer:
 
     def fit(
         self,
-        train_loader: DataLoader,
-        val_loader: DataLoader,
+        train_loader: DataLoader[Any],
+        val_loader: DataLoader[Any],
         output_dir: Path | None = None,
     ) -> dict[str, list[float]]:
         """Train the model.
@@ -189,7 +190,7 @@ class BertTrainer:
         output_dir = output_dir or Path("data/models")
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        history = {"train_loss": [], "val_loss": [], "val_accuracy": []}
+        history: dict[str, list[float]] = {"train_loss": [], "val_loss": [], "val_accuracy": []}
 
         logger.info(f"Starting training for {self.num_epochs} epochs...")
         start_time = time.time()

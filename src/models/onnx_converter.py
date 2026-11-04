@@ -70,7 +70,6 @@ class ONNXConverter:
                 },
                 opset_version=14,
                 do_constant_folding=True,
-                use_external_data_format=False,
             )
 
             logger.info(f"ONNX model saved to {self.output_path}")

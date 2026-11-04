@@ -201,6 +201,7 @@ module = [
     "sklearn.*",
     "pandas.*",
     "kagglehub.*",
+    "onnxruntime.*",
 ]
 ignore_missing_imports = true
 

@@ -67,7 +67,7 @@ class Settings(BaseSettings):
     prometheus_port: int = 9090
     grafana_port: int = 3000
 
-    def __init__(self, **data: object) -> None:
+    def __init__(self, **data: Any) -> None:
         """Initialize settings and ensure paths exist."""
         super().__init__(**data)
         # Create directories if they don't exist

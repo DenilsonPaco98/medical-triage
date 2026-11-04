@@ -3,7 +3,7 @@
 import logging
 from pathlib import Path
 
-import pandas as pd  # type: ignore[import-untyped]
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ class DatasetPreparation:
             logger.info(f"Downloading dataset {self.dataset_name} from Kaggle...")
             import kagglehub  # type: ignore[import-untyped]
 
-            path = kagglehub.dataset_download(self.dataset_name)
+            path = kagglehub.dataset_download(self.dataset_name)  # type: ignore[no-untyped-call]
             logger.info(f"Downloaded to {path}")
 
             # Find and copy CSV file

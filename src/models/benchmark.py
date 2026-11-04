@@ -3,6 +3,7 @@
 import logging
 import time
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import torch
@@ -138,7 +139,7 @@ class LatencyBenchmark:
         self,
         pytorch_model_path: Path,
         onnx_model_path: Path | None = None,
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Compare PyTorch vs ONNX latency.
 
         Args:

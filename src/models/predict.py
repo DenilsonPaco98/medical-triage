@@ -41,7 +41,7 @@ class SentimentPredictor:
 
         self.model.eval()
 
-    def predict(self, text: str) -> dict[str, float | str]:
+    def predict(self, text: str) -> dict[str, str | float | dict[str, float]]:
         """Predict sentiment for a single text.
 
         Args:

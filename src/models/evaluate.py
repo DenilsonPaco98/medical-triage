@@ -2,11 +2,11 @@
 
 import logging
 
-from sklearn.metrics import classification_report  # type: ignore[import-untyped]
-from sklearn.metrics import confusion_matrix  # type: ignore[import-untyped]
-from sklearn.metrics import f1_score  # type: ignore[import-untyped]
-from sklearn.metrics import precision_score  # type: ignore[import-untyped]
-from sklearn.metrics import recall_score  # type: ignore[import-untyped]
+from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import f1_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
 
 logger = logging.getLogger(__name__)
 
