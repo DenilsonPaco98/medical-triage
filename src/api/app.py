@@ -1,13 +1,17 @@
 """FastAPI application."""
 
 import logging
+import time
 from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI
+from fastapi import Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api import routes
+from src.api.metrics import HTTP_REQUEST_DURATION
+from src.api.metrics import HTTP_REQUESTS
 from src.config import settings
 
 logger = logging.getLogger(__name__)
@@ -31,6 +35,24 @@ app = FastAPI(
     version="0.2.0",
     lifespan=lifespan,
 )
+
+
+@app.middleware("http")
+async def collect_http_metrics(request: Request, call_next: Any) -> Any:
+    """Record request count and latency using the matched route template."""
+    started_at = time.perf_counter()
+    status_code = "500"
+    try:
+        response = await call_next(request)
+        status_code = str(response.status_code)
+        return response
+    finally:
+        route = request.scope.get("route")
+        endpoint = getattr(route, "path", "unmatched")
+        HTTP_REQUESTS.labels(request.method, endpoint, status_code).inc()
+        HTTP_REQUEST_DURATION.labels(request.method, endpoint).observe(
+            time.perf_counter() - started_at,
+        )
 
 # Add CORS middleware
 app.add_middleware(

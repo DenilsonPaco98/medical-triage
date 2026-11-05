@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   # =====================================================================
   # API Server (FastAPI)
@@ -16,13 +14,17 @@ services:
       - ENV=production
       - LOG_LEVEL=INFO
       - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - DEVICE=cpu
+      - API_WORKERS=1
     volumes:
       - ./data:/app/data
       - ./mlruns:/app/mlruns
       - ./logs:/app/logs
     depends_on:
-      - mlflow
-      - postgres
+      mlflow:
+        condition: service_started
+      postgres:
+        condition: service_healthy
     networks:
       - medical-review-network
     restart: unless-stopped
@@ -39,6 +41,9 @@ services:
   # =====================================================================
   mlflow:
     image: ghcr.io/mlflow/mlflow:v2.10.0
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - pip install --no-cache-dir psycopg2-binary && exec mlflow server --backend-store-uri postgresql://mlflow:mlflow_password@postgres:5432/mlflow_db --default-artifact-root /mlflow/artifacts --host 0.0.0.0 --port 5000
     container_name: medical-review-mlflow
     ports:
       - "5000:5000"
@@ -49,16 +54,11 @@ services:
     volumes:
       - ./mlruns:/mlflow/artifacts
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - medical-review-network
     restart: unless-stopped
-    command: >
-      mlflow server
-      --backend-store-uri postgresql://mlflow:mlflow_password@postgres:5432/mlflow_db
-      --default-artifact-root /mlflow/artifacts
-      --host 0.0.0.0
-      --port 5000
 
   # =====================================================================
   # PostgreSQL (MLflow Backend & Data)
@@ -93,28 +93,22 @@ services:
       target: runtime
     container_name: medical-review-airflow
     environment:
-      - AIRFLOW_HOME=/root/airflow
+      - AIRFLOW_HOME=/home/appuser/airflow
       - AIRFLOW__CORE__DAGS_FOLDER=/app/dags
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=sqlite:////root/airflow/airflow.db
-      - AIRFLOW_CORE_LOAD_EXAMPLES=false
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=sqlite:////home/appuser/airflow/airflow.db
+      - AIRFLOW__CORE__LOAD_EXAMPLES=false
     ports:
       - "4200:8080"
     volumes:
       - ./dags:/app/dags
       - ./data:/app/data
       - ./logs:/app/logs
-      - airflow_home:/root/airflow
-    depends_on:
-      - postgres
+      - airflow_home:/home/appuser/airflow
     networks:
       - medical-review-network
     restart: unless-stopped
-    command: >
-      bash -c "pip install apache-airflow >/dev/null 2>&1 &&
-               airflow db migrate &&
-               airflow users create --username admin --password admin --firstname Admin --lastname Admin --role Admin --email admin@example.com 2>/dev/null || true &&
-               airflow webserver"
+    command: ["airflow", "standalone"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080"]
       interval: 30s
@@ -131,7 +125,7 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'

@@ -1,0 +1,101 @@
+{
+  "id": null,
+  "uid": "medical-triage-observability",
+  "title": "Medical Triage - API e Modelo",
+  "tags": ["medical-triage", "api", "model", "prometheus"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "API disponível",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
+      "targets": [{ "expr": "max(up{job=\"fastapi\"})", "refId": "A", "legendFormat": "API" }],
+      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "orientation": "auto", "colorMode": "background", "graphMode": "area", "justifyMode": "center", "textMode": "auto" }
+    },
+    {
+      "id": 2,
+      "title": "Requisições por segundo (5 min)",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 },
+      "targets": [{ "expr": "sum by (endpoint) (rate(medical_triage_http_requests_total[5m]))", "refId": "A", "legendFormat": "{{endpoint}}" }],
+      "fieldConfig": { "defaults": { "unit": "reqps", "min": 0 }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } }
+    },
+    {
+      "id": 3,
+      "title": "Taxa de erros HTTP 5xx",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 },
+      "targets": [{ "expr": "100 * sum(rate(medical_triage_http_requests_total{status_code=~\"5..\"}[5m])) / clamp_min(sum(rate(medical_triage_http_requests_total[5m])), 0.001)", "refId": "A", "legendFormat": "Erros 5xx (%)" }],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] },
+      "options": { "legend": { "displayMode": "hidden", "placement": "bottom" }, "tooltip": { "mode": "single" } }
+    },
+    {
+      "id": 4,
+      "title": "Predições totais",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 0 },
+      "targets": [{ "expr": "sum(medical_triage_model_predictions_total)", "refId": "A", "legendFormat": "Predições" }],
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "orientation": "auto", "colorMode": "value", "graphMode": "area", "justifyMode": "center", "textMode": "auto" }
+    },
+    {
+      "id": 5,
+      "title": "Latência HTTP p50 / p95 / p99",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum by (le) (rate(medical_triage_http_request_duration_seconds_bucket{endpoint=~\"/predict|/predict-batch\"}[5m])))", "refId": "A", "legendFormat": "HTTP p50" },
+        { "expr": "histogram_quantile(0.95, sum by (le) (rate(medical_triage_http_request_duration_seconds_bucket{endpoint=~\"/predict|/predict-batch\"}[5m])))", "refId": "B", "legendFormat": "HTTP p95" },
+        { "expr": "histogram_quantile(0.99, sum by (le) (rate(medical_triage_http_request_duration_seconds_bucket{endpoint=~\"/predict|/predict-batch\"}[5m])))", "refId": "C", "legendFormat": "HTTP p99" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s", "min": 0 }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } }
+    },
+    {
+      "id": 6,
+      "title": "Tempo de inferência do modelo p50 / p95 / p99",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum by (le, operation) (rate(medical_triage_model_inference_duration_seconds_bucket[5m])))", "refId": "A", "legendFormat": "{{operation}} p50" },
+        { "expr": "histogram_quantile(0.95, sum by (le, operation) (rate(medical_triage_model_inference_duration_seconds_bucket[5m])))", "refId": "B", "legendFormat": "{{operation}} p95" },
+        { "expr": "histogram_quantile(0.99, sum by (le, operation) (rate(medical_triage_model_inference_duration_seconds_bucket[5m])))", "refId": "C", "legendFormat": "{{operation}} p99" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s", "min": 0 }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } }
+    },
+    {
+      "id": 7,
+      "title": "Predições por sentimento",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 13 },
+      "targets": [{ "expr": "sum by (sentiment) (increase(medical_triage_model_predictions_total[5m]))", "refId": "A", "legendFormat": "{{sentiment}}" }],
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0 }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } }
+    },
+    {
+      "id": 8,
+      "title": "Requisições por rota e status",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 13 },
+      "targets": [{ "expr": "sum by (endpoint, status_code) (increase(medical_triage_http_requests_total[5m]))", "refId": "A", "legendFormat": "{{endpoint}} — {{status_code}}" }],
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0 }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } }
+    }
+  ]
+}

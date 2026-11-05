@@ -1,508 +1,116 @@
-# Medical Review Sentiment Analysis - MLOps
+# Medical Review Sentiment Analysis — MLOps
 
-🏥 **Análise de Sentimento de Reviews Médicos** - Sistema MLOps de Classificação de Sentimentos usando Transformers (BERT) com otimização ONNX, Airflow, Docker Compose, Prometheus + Grafana e CI/CD completo.
+Projeto acadêmico de classificação de sentimento em textos de avaliações médicas. O sistema estima as classes `negative`, `neutral` e `positive`; **não é um sistema de triagem clínica, diagnóstico ou recomendação médica**.
 
-**FIAP Tech Challenge - ML Engineering Especialization**
+> O repositório contém componentes de treinamento, inferência e infraestrutura de observabilidade, mas ainda não demonstra validade clínica nem desempenho de modelo. Não use suas previsões para decisões sobre pacientes.
 
----
+## Escopo implementado
 
-## 📊 O Projeto
+- Classificador de sequência baseado em `distilbert-base-uncased`, PyTorch e Transformers.
+- Preparação de CSV local e utilitário de download via Kaggle; se o download falhar, o código cria um pequeno conjunto sintético de demonstração. Esse fallback **não é dado de treinamento representativo**.
+- API FastAPI com `/health`, `/predict`, `/predict-batch` e `/metrics`.
+- Utilitários separados para avaliação de métricas, exportação/quantização ONNX e benchmark PyTorch/ONNX. A API atual serve PyTorch; não carrega o ONNX.
+- Auxiliares de tracking de métricas/parâmetros via MLflow; não há registro/publicação de modelo no Model Registry.
+- Compose com API, MLflow, PostgreSQL, Airflow, Prometheus e Grafana. O DAG Airflow atual prepara dados, mas as tarefas chamadas de treinamento/avaliação **não treinam nem avaliam o modelo**.
+- GitHub Actions executa Ruff, Mypy, pytest e cobertura.
 
-Sistema end-to-end para classificação de sentimentos em avaliações médicas (Positivo, Neutro, Negativo):
+## O que não está implementado
 
-- 🤖 **Modelo**: Fine-tuning BERT para classificação de texto
-- ⚡ **Otimização**: Conversão ONNX para redução de latência
-- 🔄 **Orquestração**: DAG Airflow para ingestão, treinamento e avaliação
-- 📊 **Monitoramento**: Docker Compose com API FastAPI + Prometheus + Grafana
-- 📈 **Tracking**: MLflow para experimentos e model registry
-- ✅ **CI/CD**: GitHub Actions com testes automáticos
-- 🐳 **Deployment**: Docker multi-stage otimizado
-- 📊 **Dashboard**: Métricas em tempo real via Grafana
+Não há integração funcional com Streamlit, Prefect, TorchServe, DuckDB, Great Expectations, Evidently, A/B testing, alertas operacionais nem implantação em Kubernetes/cloud. Esses nomes aparecem em documentação histórica/configuração, mas não devem ser interpretados como capacidades entregues.
 
----
+## Requisitos e instalação
 
-## 🛠️ Tech Stack
-
-```
-┌──────────────────────────────────────────────────────────┐
-│ MODELAGEM & OTIMIZAÇÃO (20%)                             │
-├──────────────────────────────────────────────────────────┤
-│ • PyTorch + Transformers (HuggingFace BERT)              │
-│ • ONNX Runtime (conversão & otimização)                  │
-│ • Benchmark de latência (pré vs pós-ONNX)                │
-│ • MLflow model tracking                                  │
-└──────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────┐
-│ ORQUESTRAÇÃO - AIRFLOW (15%)                             │
-├──────────────────────────────────────────────────────────┤
-│ • Apache Airflow 3.x                                      │
-│ • DAG: data_preparation → model_training → evaluation     │
-│ • Scheduling automático                                   │
-└──────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────┐
-│ API & DEPLOYMENT (FastAPI)                               │
-├──────────────────────────────────────────────────────────┤
-│ • FastAPI (async REST endpoints)                         │
-│ • Pydantic (request/response validation)                 │
-│ • Docker multi-stage                                     │
-└──────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────┐
-│ MONITORAMENTO (20%)                                      │
-├──────────────────────────────────────────────────────────┤
-│ • Prometheus (scraping de métricas)                      │
-│ • Grafana (dashboards e alertas)                         │
-│ • Docker Compose (stack completo)                        │
-│ • Health checks e métricas de API                        │
-└──────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────┐
-│ CI/CD - GITHUB ACTIONS (15%)                             │
-├──────────────────────────────────────────────────────────┤
-│ • Workflow de testes automáticos                         │
-│ • Lint (ruff) + type-check (mypy)                        │
-│ • Cobertura de testes (pytest + coverage)                │
-└──────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────┐
-│ DOCUMENTAÇÃO & VIDEO (30%)                               │
-├──────────────────────────────────────────────────────────┤
-│ • README com arquitetura                                 │
-│ • Instructions de setup & execução                       │
-│ • Video STAR ≤5 min demonstrando projeto                 │
-└──────────────────────────────────────────────────────────┘
-```
-
----
-
-## 📋 Requisitos
-
-- **Python 3.11** ou superior
-- **uv** - gerenciador de pacotes ultra-rápido ([instalação](https://docs.astral.sh/uv/getting-started/installation/))
-- **Docker + Docker Compose**
-- **Git**
-- **Makefile** (opcional, recomendado no WSL no Windows)
-
----
-
-## ⚡ Quick Start
-
-### 1. Setup Inicial
+- Python `>=3.11,<3.14` (a CI está configurada para Python 3.11).
+- `uv`; Docker Desktop/Compose para executar a stack completa.
+- Para Windows, comandos `make` podem exigir WSL ou uma instalação de GNU Make.
 
 ```bash
 git clone https://github.com/DenilsonPaco98/medical-review-sentiment-mlops
 cd medical-review-sentiment-mlops
-
-uv venv && .venv\Scripts\activate
-uv sync --extra dev --extra ml
+uv sync --extra dev --extra ml --extra lint
 ```
 
-### 2. Treinamento e Otimização
+Configure credenciais somente em ambiente local protegido, nunca em Git. `.env.example` contém placeholders; se uma credencial real já foi versionada ou compartilhada, revogue-a e gere outra.
+
+## Dados e treinamento
+
+O caminho de treinamento CLI implementado é `src.models.train_pipeline` (não `src.models.train_bert`). Exige um CSV com coluna `text` e uma coluna de rótulo chamada `sentiment`, `label_name` ou `label`. Rótulos aceitos: `negative`, `neutral`, `positive` ou IDs `0`, `1`, `2` nessa ordem.
 
 ```bash
-# Prepara dados do Kaggle
-make prepare-data
+# Baixa/prepara dados (requer acesso/configuração Kaggle; pode produzir fallback sintético)
+uv run python -c "from src.data.dataset import prepare_dataset; print(prepare_dataset())"
 
-# Treina modelo BERT
-make train
-
-# Converte para ONNX (redução de latência)
-make export-onnx
-
-# Compara latência: BERT vs ONNX
-make benchmark-latency
+# Treina usando o CSV padrão data/raw/medical_reviews.csv
+uv run python -m src.models.train_pipeline --data data/raw/medical_reviews.csv --output-dir data/models
 ```
 
-### 3. Orquestração com Airflow
+O treinamento separa treino/validação estratificados (80/20), tokeniza até 128 tokens por padrão, executa duas épocas e salva `data/models/bert_sentiment_model.pt`. Os parâmetros podem ser ajustados com `--epochs`, `--batch-size`, `--max-length`, `--device` e `--model-name`. É necessário ter acesso ao modelo/tokenizer Hugging Face na primeira execução. O treinamento registra perdas e acurácia de validação no MLflow quando a configuração de tracking está disponível.
+
+O módulo `src.models.evaluate` fornece funções de cálculo de métricas para rótulos reais e predições; não existe atualmente um comando de avaliação de ponta a ponta que carregue um conjunto de teste e produza um relatório reproduzível. O treinamento não persiste um manifesto de dados, divisão, versões ou métricas de teste.
+
+## API local
 
 ```bash
-# Terminal 1: Webserver (UI)
-airflow webserver -p 8080
-
-# Terminal 2: Scheduler
-airflow scheduler
-
-# Acessa: http://localhost:8080
-# DAG: sentiment_training_dag
+uv run uvicorn src.api.app:app --host 127.0.0.1 --port 8000
 ```
 
-### 4. Monitoramento (Docker Compose)
+Documentação interativa: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
 
-```bash
-docker-compose up
+Exemplo de requisição:
 
-# Serviços:
-# - API FastAPI:    http://localhost:8000
-# - Grafana:        http://localhost:3000 (admin/admin)
-# - Prometheus:     http://localhost:9090
-```
-
-### 5. Testes & CI/CD
-
-```bash
-make test           # Pytest + coverage
-make lint           # Ruff linting
-make typecheck      # Mypy strict
-
-# GitHub Actions roda automaticamente
-```
-
----
-
-## 📁 Estrutura do Projeto
-
-```
-medical-review-sentiment-mlops/
-├── README.md                          # Este arquivo
-├── LICENSE                            # MIT License
-├── Makefile                           # Comandos úteis (make train, make test, etc)
-├── pyproject.toml                     # Dependências e configuração do projeto
-├── .env.example                       # Template de variáveis de ambiente
-│
-├── Dockerfile                         # Multi-stage: base -> builder -> runtime
-├── docker-compose.yml                 # Stack: API + MLflow + Prometheus + Grafana
-│
-├── src/
-│   ├── __init__.py
-│   ├── py.typed                       # PEP 561 - Type hints
-│   │
-│   ├── config/
-│   │   ├── __init__.py
-│   │   ├── settings.py                # Pydantic BaseSettings para env vars
-│   │   └── logging.py                 # Configuração centralizada de logging
-│   │
-│   ├── data/
-│   │   ├── __init__.py
-│   │   ├── dataset.py                 # Download e preparação de dados (Kaggle API)
-│   │   ├── preprocessing.py           # Cleaning, normalization, tokenization
-│   │   ├── validation.py              # Great Expectations rules
-│   │   └── duckdb_manager.py          # Interface com DuckDB
-│   │
-│   ├── features/
-│   │   ├── __init__.py
-│   │   ├── engineering.py             # Feature extraction (text embeddings, etc)
-│   │   └── transformers_utils.py      # Tokenizers, preprocessors
-│   │
-│   ├── models/
-│   │   ├── __init__.py
-│   │   ├── architectures.py           # Arquitetura do modelo (BertForSequenceClassification)
-│   │   ├── train_bert.py              # Pipeline de treinamento (fine-tuning)
-│   │   ├── evaluate.py                # Métricas (precision, recall, f1, etc)
-│   │   ├── predict.py                 # Inference (batch + single)
-│   │   └── model_wrapper.py           # Wrapper para MLflow + reproducibilidade
-│   │
-│   ├── monitoring/
-│   │   ├── __init__.py
-│   │   ├── drift_detector.py          # Evidently AI - data/model drift
-│   │   ├── metrics.py                 # Prometheus metrics + custom metrics
-│   │   └── logging_utils.py           # Structured logging (JSON)
-│   │
-│   ├── mlflow_utils/
-│   │   ├── __init__.py
-│   │   ├── tracking.py                # MLflow logging helpers
-│   │   ├── registry.py                # Model registry operations
-│   │   └── callbacks.py               # Callbacks para logging automático
-│   │
-│   ├── api/
-│   │   ├── __init__.py
-│   │   ├── app.py                     # FastAPI application
-│   │   ├── routes.py                  # Endpoints (/predict, /health, /metrics)
-│   │   ├── schemas.py                 # Pydantic models (request/response)
-│   │   ├── middleware.py              # Logging, error handling, CORS
-│   │   └── inference_service.py       # Integração com TorchServe
-│   │
-│   ├── ui/
-│   │   ├── __init__.py
-│   │   ├── dashboard.py               # Streamlit - EDA e exploração
-│   │   ├── metrics_viewer.py          # Streamlit - visualização de métricas
-│   │   └── components/                # Componentes reutilizáveis
-│   │
-│   ├── orchestration/
-│   │   ├── __init__.py
-│   │   ├── flows.py                   # Prefect flows (data prep -> train -> eval)
-│   │   └── tasks.py                   # Prefect tasks
-│   │
-│   └── cli.py                         # CLI com Typer (uv run src.cli <command>)
-│
-├── tests/
-│   ├── __init__.py
-│   ├── conftest.py                    # Pytest fixtures
-│   ├── test_data_preprocessing.py     # Tests para data pipeline
-│   ├── test_models.py                 # Tests para modelos
-│   ├── test_api.py                    # Tests para API endpoints
-│   └── test_monitoring.py             # Tests para monitoring
-│
-├── notebooks/
-│   ├── 01_eda_medical_reviews.ipynb   # Exploratory Data Analysis
-│   ├── 02_sentiment_analysis.ipynb    # Sentiment classification
-│   └── 03_model_comparison.ipynb      # Comparação de modelos
-│
-├── dags/
-│   └── sentiment_training_flow.py     # Prefect flow (alternativa a Airflow DAG)
-│
-├── observability/
-│   ├── prometheus.yml                 # Config Prometheus
-│   └── grafana/
-│       ├── dashboards/
-│       │   └── sentiment-overview.json
-│       └── provisioning/
-│           ├── dashboards.yml
-│           └── datasources/
-│               └── prometheus.yml
-│
-├── docs/
-│   ├── ARCHITECTURE.md                # Diagrama e decisões arquiteturais
-│   ├── DATA_PIPELINE.md               # Documentação do pipeline de dados
-│   ├── MODEL_TRAINING.md              # Guia de treinamento
-│   ├── DEPLOYMENT.md                  # Instruções de deploy
-│   ├── MONITORING.md                  # Guia de monitoramento
-│   └── API_REFERENCE.md               # Documentação da API
-│
-├── data/
-│   ├── raw/                           # Dados brutos (do Kaggle)
-│   ├── processed/                     # Dados processados (DuckDB)
-│   └── models/                        # Modelos treinados
-│
-├── mlruns/                            # MLflow artifacts (gitignored)
-├── .dvc/                              # DVC config (opcional, para versionar dados)
-│
-├── .env.example                       # Template para variáveis de ambiente
-├── .github/
-│   └── workflows/
-│       ├── tests.yml                  # Testes automáticos
-│       ├── lint.yml                   # Linting (ruff, mypy)
-│       └── deploy.yml                 # Deploy automático
-│
-├── Makefile                           # Comandos convenientes
-└── pyproject.toml                     # Definição do projeto e dependências
-```
-
----
-
-## 🚀 Workflow
-
-### Desenvolvimento Local
-
-```bash
-# 1. Prepare o ambiente
-make install
-
-# 2. Execute os testes
-make test
-make test-cov
-
-# 3. Lint e type checking
-make lint
-make typecheck
-
-# 4. Treinar um modelo (com MLflow tracking)
-make train
-
-# 5. Visualizar resultados
-make mlflow-ui
-streamlit run src/ui/dashboard.py
-
-# 6. Deploy local com Docker
-docker-compose up
-
-# 7. Testar API
-curl -X POST http://localhost:8000/predict \
-  -H "Content-Type: application/json" \
-  -d '{"text": "Great doctor, very professional!"}'
-```
-
-### Pipeline de Produção
-
-```
-Data Prep (Prefect) → Feature Engineering → Model Training → Evaluation
-                                                ↓
-                                        MLflow Registry
-                                                ↓
-                                        A/B Testing
-                                                ↓
-                                    Deployment (TorchServe)
-                                                ↓
-                                    Monitoring (Evidently)
-```
-
----
-
-## 📊 Recursos Principais
-
-### 1. **MLflow Experiment Tracking**
-```python
-# Automático em cada treinamento
-mlflow.start_run(run_name="bert-base-uncased-lr-2e5")
-mlflow.log_params({"learning_rate": 2e-5, "epochs": 3})
-mlflow.log_metrics({"val_loss": 0.25, "val_f1": 0.92})
-mlflow.pytorch.log_model(model, "model")
-# Visualizar: make mlflow-ui
-```
-
-### 2. **Streamlit Dashboard**
-- 📊 EDA interativa
-- 📈 Distribuição de sentimentos
-- 🔍 Análise de exemplos incorretos
-- 📉 Métricas em tempo real
-
-### 3. **Prefect Orchestration**
-```python
-# Flows pythônicas, sem YAML complexo
-@flow(name="sentiment-training")
-def train_pipeline():
-    data = prepare_data()
-    model, metrics = train_model(data)
-    evaluate_model(model)
-```
-
-### 4. **Great Expectations**
-- Validação automática de dados
-- Data drift detection
-- Quality rules customizadas
-
-### 5. **Evidently AI**
-- Monitoramento de model/data drift
-- Alerts automáticos
-- Reports em HTML
-
----
-
-## 📈 Performance Esperada
-
-- **Accuracy**: 92-96% (3-class sentiment)
-- **Inference latency**: <100ms (GPU), <500ms (CPU)
-- **Training time**: ~15-30 min (single GPU)
-- **Model size**: ~410MB (BERT base)
-
----
-
-## 🔗 Endpoints da API
-
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| `POST` | `/predict` | Predição de sentimento |
-| `POST` | `/predict-batch` | Predição em lote |
-| `GET` | `/health` | Health check |
-| `GET` | `/metrics` | Métricas Prometheus |
-| `GET` | `/docs` | Swagger UI |
-
-### Exemplo de Requisição
-
-```bash
-curl -X POST http://localhost:8000/predict \
-  -H "Content-Type: application/json" \
-  -d '{
-    "text": "Excelente atendimento, médico muito atencioso!",
-    "model_version": "production"
-  }'
-```
-
-**Response:**
 ```json
-{
-  "text": "Excelente atendimento, médico muito atencioso!",
-  "sentiment": "positive",
-  "confidence": 0.98,
-  "scores": {
-    "positive": 0.98,
-    "neutral": 0.015,
-    "negative": 0.005
-  },
-  "inference_time_ms": 45
-}
+{"text": "Atendimento atencioso e profissional."}
 ```
 
----
+`/predict` devolve texto, classe, confiança, escores das três classes e tempo de inferência. O campo opcional `model_version` ainda não é utilizado para selecionar um modelo. `/predict-batch` recebe `{"texts": ["texto 1", "texto 2"]}` e retorna uma lista; a implementação executa cada texto individualmente.
 
-## 👨‍💻 Desenvolvimento
+**Importante:** se o checkpoint não existir, a inferência instancia um classificador com cabeça de classificação recém-inicializada e ainda pode retornar resultados. Um `/health` com status `healthy` confirma apenas a resposta da aplicação, não que os pesos foram carregados ou que o modelo é válido. Forneça e valide explicitamente um checkpoint treinado antes de interpretar previsões.
 
-### Setup de IDE
+## ONNX e benchmark
+
+O exportador aceita o checkpoint PyTorch em `data/models/bert_sentiment_model.pt`; o benchmark mede localmente a inferência de PyTorch e ONNX. São ferramentas independentes da API, e nenhum resultado de latência ou redução de tamanho é garantido pelo código. Faça medições no hardware, dados e configuração alvo antes de divulgar números.
+
+## Docker Compose e observabilidade
 
 ```bash
-# VSCode - copiar .vscode/settings.json
-cp .vscode/settings.example.json .vscode/settings.json
-
-# PyCharm - Auto-detect venv criado pelo uv
-# File > Project Settings > Python Interpreter
+docker compose up --build
 ```
 
-### Pre-commit Hooks
+Endereços publicados: API `:8000`, MLflow `:5000`, Airflow `:4200`, Prometheus `:9090`, Grafana `:3000` e PostgreSQL `:5432`. Consulte a configuração do Compose antes do uso: há senhas de desenvolvimento e imagens com tags flutuantes. Troque as credenciais, restrinja exposição de portas e fixe versões antes de qualquer ambiente compartilhado.
+
+Prometheus coleta `/metrics` da API. O dashboard provisionado do Grafana exibe disponibilidade, volume de requisições/predições e distribuições de latência HTTP/inferência. Métricas técnicas não medem acurácia, deriva de dados nem segurança clínica. A stack é uma configuração local de desenvolvimento, não uma implantação endurecida para produção.
+
+## Comandos de qualidade
 
 ```bash
-pre-commit install
-# Roda automaticamente antes de cada commit
+uv run ruff check src tests
+uv run mypy src
+uv run pytest tests -v --cov=src --cov-report=term-missing
 ```
 
-### Type Hints (Strict Mode)
+Os testes existentes focam limpeza básica de dados e contratos HTTP com predições simuladas; o teste de modelo real está marcado como ignorado por depender dos pesos. Portanto, testes verdes não constituem validação da qualidade preditiva.
 
-```bash
-make typecheck  # mypy em strict mode
+## Estrutura real (resumo)
+
+```text
+src/api/                 API, schemas, rotas e métricas Prometheus
+src/config/              configurações via Pydantic Settings
+src/data/                download/preparação e limpeza de CSV
+src/models/              treinamento, predição, avaliação e ONNX
+src/mlflow_utils/        helper de tracking
+dags/                    DAG Airflow (esqueleto; sem treino real)
+observability/            configuração Prometheus e provisioning/dashboard Grafana
+tests/                   testes de API, preprocessing e modelos
+docs/                    documentação de arquitetura e auditoria técnica
+notebooks/               notebook de EDA
 ```
 
----
+Dados, pesos e artefatos locais são ignorados pelo Git. Um clone limpo precisa recebê-los/gerá-los explicitamente; sua presença no computador do autor não garante sua disponibilidade em outro ambiente.
 
-## 🧪 Testing
+## Limitações e próximos passos científicos
 
-```bash
-# Todos os testes
-make test
+Antes de qualquer alegação de desempenho, construir avaliação reproduzível com conjunto de teste independente e versionado, baseline, matriz de confusão, métricas por classe, intervalos de confiança, análise de desbalanceamento e revisão de vazamento/duplicatas. Também são prioritários: falhar de forma explícita quando não houver checkpoint; separar readiness de liveness; implementar avaliação e treino no DAG; adicionar limites ao batch e execução fora do event loop; persistir versões/configurações; remover credenciais/defaults inseguros; e validar o domínio/idioma dos dados. Nenhuma acurácia, latência ou adequação clínica é afirmada neste README.
 
-# Com coverage report
-make test-cov
+## Licença
 
-# Teste específico
-pytest tests/test_models.py::test_bert_training -v
-
-# Watch mode
-ptw
-```
-
----
-
-## 📚 Documentação
-
-Ver pasta `/docs` para:
-- 🏗️ [ARCHITECTURE.md](docs/ARCHITECTURE.md) - Decisões de design
-- 🔀 [DATA_PIPELINE.md](docs/DATA_PIPELINE.md) - Fluxo de dados
-- 🤖 [MODEL_TRAINING.md](docs/MODEL_TRAINING.md) - Guia de treinamento
-- 🚀 [DEPLOYMENT.md](docs/DEPLOYMENT.md) - Deploy em produção
-- 📊 [MONITORING.md](docs/MONITORING.md) - Observabilidade
-- 📡 [API_REFERENCE.md](docs/API_REFERENCE.md) - Referência da API
-
----
-
-## 🤝 Contribuindo
-
-```bash
-# 1. Crie uma branch
-git checkout -b feature/minha-feature
-
-# 2. Faça as mudanças
-# 3. Rode os testes e lint
-make test && make lint
-
-# 4. Commit com mensagens descritivas
-git commit -m "feat: adiciona novo modelo"
-
-# 5. Push e abra um PR
-```
-
----
-
-## 📄 Licença
-
-MIT License - Ver [LICENSE](LICENSE)
-
----
-
-## 📞 Contato & Suporte
-
-- 🐛 Issues: https://github.com/DenilsonPaco98/medical-review-sentiment-mlops/issues
-- 💬 Discussions: https://github.com/DenilsonPaco98/medical-review-sentiment-mlops/discussions
-- 📧 Email: denilson.paco98@gmail.com
-
----
-
-**Made with ❤️ by Denilson Paco | FIAP Machine Learning Engineering Specialist**
+MIT — consulte [LICENSE](LICENSE).
