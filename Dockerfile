@@ -1,6 +1,6 @@
 # Multi-stage Dockerfile for Medical Review Sentiment Analysis API
 # Stage 1: Base - Python runtime
-FROM python:3.12-slim as base
+FROM python:3.12-slim AS base
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
@@ -20,20 +20,21 @@ WORKDIR /app
 
 # =====================================================================
 # Stage 2: Builder - Install Python dependencies
-FROM base as builder
+FROM base AS builder
 
 # Install uv
 RUN pip install uv
 
-# Copy project files
-COPY pyproject.toml uv.lock* ./
+# Copy project metadata and application package for an editable-independent install.
+COPY pyproject.toml README.md ./
+COPY src/ ./src/
 
-# Install dependencies using uv
-RUN uv pip install --python /usr/local/bin/python -r <(uv pip compile -o - --no-dev)
+# Install runtime dependencies declared by the project.
+RUN uv pip install --system .
 
 # =====================================================================
 # Stage 3: Runtime - Minimal production image
-FROM base as runtime
+FROM base AS runtime
 
 # Copy installed packages from builder
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
@@ -41,8 +42,8 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Create non-root user for security
 RUN useradd -m -u 1000 appuser && \
-    mkdir -p /app/data/models /app/logs /app/mlruns && \
-    chown -R appuser:appuser /app
+    mkdir -p /app/data/models /app/logs /app/mlruns /home/appuser/airflow && \
+    chown -R appuser:appuser /app /home/appuser/airflow
 
 WORKDIR /app
 
@@ -62,11 +63,11 @@ USER appuser
 EXPOSE 8000 5000 8501 9090 4200
 
 # Default command: start FastAPI server
-CMD ["uvicorn", "src.api.app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+CMD ["uvicorn", "src.api.app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
 
 # =====================================================================
 # Stage 4: Development image (includes dev tools)
-FROM runtime as dev
+FROM runtime AS dev
 
 USER root
 

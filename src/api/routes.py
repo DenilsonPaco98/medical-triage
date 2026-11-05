@@ -9,6 +9,8 @@ from fastapi import Response
 from prometheus_client import CONTENT_TYPE_LATEST
 from prometheus_client import generate_latest
 
+from src.api.metrics import MODEL_INFERENCE_DURATION
+from src.api.metrics import MODEL_PREDICTIONS
 from src.api.schemas import BatchPredictionRequest
 from src.api.schemas import HealthResponse
 from src.api.schemas import PredictionRequest
@@ -58,11 +60,11 @@ async def predict(request: PredictionRequest) -> PredictionResponse:
     """
     try:
         predictor = get_predictor()
-        start_time = time.time()
-
-        result = predictor.predict(request.text)
-
-        inference_time = (time.time() - start_time) * 1000
+        start_time = time.perf_counter()
+        with MODEL_INFERENCE_DURATION.labels("single").time():
+            result = predictor.predict(request.text)
+        inference_time = (time.perf_counter() - start_time) * 1000
+        MODEL_PREDICTIONS.labels(result["sentiment"]).inc()
 
         # Type-safe extraction from result dict
         result_text = str(result["text"])
@@ -99,7 +101,10 @@ async def predict_batch(request: BatchPredictionRequest) -> list[PredictionResul
     """
     try:
         predictor = get_predictor()
-        results = predictor.predict_batch(request.texts)
+        with MODEL_INFERENCE_DURATION.labels("batch").time():
+            results = predictor.predict_batch(request.texts)
+        for result in results:
+            MODEL_PREDICTIONS.labels(result["sentiment"]).inc()
         return results
 
     except Exception as e:

@@ -1,209 +1,70 @@
-"""Project documentation - Architecture Overview."""
+# Arquitetura implementada
 
-# Architecture Overview
+## Objetivo e limites de uso
 
-## System Design
+Aplicação acadêmica que classifica textos de avaliações médicas como `negative`, `neutral` ou `positive`. A saída é uma estimativa de sentimento geral; o sistema não executa triagem clínica, diagnóstico ou aconselhamento e não foi validado para uso em saúde.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                          USER LAYER                             │
-├─────────────────────────────────────────────────────────────────┤
-│  • FastAPI REST API (async)                                     │
-│  • Streamlit Dashboard (interactive)                            │
-│  • CLI Tools (batch processing)                                 │
-└─────────────────────────────────────────────────────────────────┘
-                                ↓
-┌─────────────────────────────────────────────────────────────────┐
-│                      APPLICATION LAYER                          │
-├─────────────────────────────────────────────────────────────────┤
-│  • Sentiment Prediction (BERT-based)                            │
-│  • Model Inference (TorchServe)                                 │
-│  • Request Validation (Pydantic)                                │
-│  • Caching Layer                                                │
-└─────────────────────────────────────────────────────────────────┘
-                                ↓
-┌─────────────────────────────────────────────────────────────────┐
-│                       MODEL LAYER                               │
-├─────────────────────────────────────────────────────────────────┤
-│  • Fine-tuned BERT (3-class: positive/neutral/negative)         │
-│  • Model versioning (MLflow Registry)                           │
-│  • Model serving (TorchServe)                                   │
-└─────────────────────────────────────────────────────────────────┘
-                                ↓
-┌─────────────────────────────────────────────────────────────────┐
-│                      DATA LAYER                                 │
-├─────────────────────────────────────────────────────────────────┤
-│  • DuckDB (OLAP queries)                                        │
-│  • Data validation (Great Expectations)                         │
-│  • Data drift detection (Evidently AI)                          │
-└─────────────────────────────────────────────────────────────────┘
-                                ↓
-┌─────────────────────────────────────────────────────────────────┐
-│                    ORCHESTRATION LAYER                          │
-├─────────────────────────────────────────────────────────────────┤
-│  • Prefect Flows (data prep → train → deploy)                  │
-│  • Task scheduling & monitoring                                │
-│  • Error handling & retries                                    │
-└─────────────────────────────────────────────────────────────────┘
-                                ↓
-┌─────────────────────────────────────────────────────────────────┐
-│                   MONITORING LAYER                              │
-├─────────────────────────────────────────────────────────────────┤
-│  • MLflow Experiment Tracking                                   │
-│  • Prometheus Metrics                                           │
-│  • Grafana Dashboards                                           │
-│  • Structured Logging (JSON)                                    │
-└─────────────────────────────────────────────────────────────────┘
+## Componentes observados no código
+
+```text
+CSV/Kaggle ──> limpeza ──> train/validation split ──> tokenizer Transformers
+                                                          │
+                                                          v
+                                                   PyTorch DistilBERT
+                                                          │
+                                                  checkpoint state_dict
+                                                          │
+Cliente ──HTTP──> FastAPI ──> predictor PyTorch ──> resposta JSON
+                    │
+                    └── /metrics ──> Prometheus ──> Grafana provisionado
+
+Treinamento ──métricas──> MLflow tracking server
+Compose também inicia PostgreSQL e Airflow.
 ```
 
-## Key Architectural Decisions
+### Dados e pré-processamento
 
-### 1. **Model: Transformers (BERT) over TF-IDF**
-- **Why**: BERT captures semantic meaning, not just term frequency
-- **Benefit**: Better accuracy (~95%) vs TF-IDF (~85%)
-- **Trade-off**: Higher latency (100ms vs 5ms), but acceptable for production
+`src.data.dataset` tenta obter o CSV via Kaggle e grava `data/raw/medical_reviews.csv`; diante de qualquer exceção, gera um conjunto sintético de dez linhas para demonstração. Esse comportamento deve ser tratado com cautela: o sucesso da tarefa não prova que dados reais foram obtidos. `src.data.preprocessing` remove nulos/duplicatas, filtra classes não reconhecidas e oferece divisão estratificada.
 
-### 2. **Orchestration: Prefect over Airflow**
-- **Why**: Python-native DAGs, less boilerplate
-- **Benefit**: Easier to understand, debug, and extend
-- **Features**: Built-in retries, error handling, logging
+### Treinamento e avaliação
 
-### 3. **Database: DuckDB over PostgreSQL/CSV**
-- **Why**: OLAP (analytical queries), not OLTP (transactional)
-- **Benefit**: 10x faster analytics, lower storage
-- **Use case**: Time-series analysis, ML dataset queries
+`src.models.train_pipeline` é o ponto CLI implementado. Lê CSV, filtra linhas vazias, aceita rótulos textuais ou IDs, cria divisão estratificada treino/validação e chama `BertTrainer` de `src.models.train_bert`. O modelo padrão é `distilbert-base-uncased` com três classes. O pipeline grava checkpoint state_dict e loga loss e acurácia de validação no MLflow. Não há avaliação integrada em conjunto de teste independente nem artefato de resultados científicos reproduzíveis. `src.models.evaluate` contém auxiliares para métricas, não um pipeline de avaliação.
 
-### 4. **Experiment Tracking: MLflow**
-- **Why**: Industry standard, comprehensive
-- **Features**: Experiment tracking, model registry, artifact storage
-- **Integration**: Works with any ML framework
+### Inferência
 
-### 5. **Dashboard: Streamlit over Grafana**
-- **Why**: User-friendly, code-based, no UI builder needed
-- **Benefit**: Faster development, version control
-- **Use case**: Interactive data exploration, model evaluation
+`src.models.predict.SentimentPredictor` tokeniza e executa inferência PyTorch; o lote itera item a item. Se pesos não forem fornecidos/encontrados, a cabeça de classificação recém-inicializada ainda produz escores. A API não seleciona um modelo por `model_version`. O health endpoint não verifica disponibilidade/carregamento do modelo.
 
-## Data Flow
+### API e observabilidade
 
-```
-Kaggle API
-    ↓
-[data/raw/medical_reviews.csv]
-    ↓
-Data Cleaning (Preprocessing)
-    ↓
-Data Validation (Great Expectations)
-    ↓
-[DuckDB - data/processed/medical_reviews.duckdb]
-    ↓
-Feature Engineering (Tokenization)
-    ↓
-BERT Fine-tuning (Training)
-    ↓
-[MLflow - Model Registry]
-    ↓
-Model Serving (FastAPI + TorchServe)
-    ↓
-[API Response - Sentiment + Confidence]
-    ↓
-Monitoring (Prometheus + Grafana)
-```
+FastAPI declara `/health`, `/predict`, `/predict-batch` e `/metrics`. Pydantic limita texto individual a 2.000 caracteres; o endpoint em lote exige pelo menos um item, sem limite máximo explícito de itens. Middleware Prometheus agrega contagem/status/latência HTTP e a rota de predição registra duração e classe. Prometheus raspa `/metrics`; Grafana provisiona datasource e dashboard. Esses sinais observam serviço e utilização, não qualidade/deriva do modelo.
 
-## Model Training Pipeline
+### ONNX e MLflow
 
-```
-Load Dataset
-    ↓
-Data Cleaning & Splitting
-    ↓
-Tokenization (HuggingFace Tokenizer)
-    ↓
-PyTorch DataLoaders
-    ↓
-BERT Fine-tuning
-    ├─ Learning Rate: 2e-5
-    ├─ Epochs: 3
-    ├─ Batch Size: 32
-    └─ Optimizer: AdamW
-    ↓
-Evaluation Metrics
-    ├─ Accuracy
-    ├─ Precision
-    ├─ Recall
-    └─ F1 Score
-    ↓
-MLflow Logging
-    ├─ Parameters
-    ├─ Metrics
-    ├─ Model Artifacts
-    └─ Tags
-    ↓
-[Model Ready for Serving]
-```
+`src.models.onnx_converter` exporta e quantiza ONNX; `src.models.benchmark` fornece benchmark separado. A rota de inferência continua em PyTorch. MLflow recebe parâmetros e métricas, mas não há chamada de registro no Model Registry nem carregamento de modelo registrado no serving.
 
-## Deployment Architecture
+### Orquestração e containers
 
-```
-┌──────────────────────────────────────────────────┐
-│         Docker (Multi-stage Build)               │
-│  Base → Builder → Runtime → Development          │
-└──────────────────────────────────────────────────┘
-                   ↓
-┌──────────────────────────────────────────────────┐
-│      Docker Compose (Local Development)          │
-│  ├─ API (FastAPI)                                │
-│  ├─ Streamlit (Dashboard)                        │
-│  ├─ MLflow (Tracking)                            │
-│  ├─ PostgreSQL (Backend)                         │
-│  ├─ Prefect (Orchestration)                      │
-│  ├─ Prometheus (Metrics)                         │
-│  ├─ Grafana (Dashboards)                         │
-│  └─ Adminer (DB UI)                              │
-└──────────────────────────────────────────────────┘
-                   ↓
-┌──────────────────────────────────────────────────┐
-│   Production (Kubernetes/Cloud)                   │
-│  ├─ API Deployment (FastAPI)                     │
-│  ├─ Model Serving (TorchServe)                   │
-│  ├─ Data Store (Cloud DuckDB)                    │
-│  ├─ Orchestration (Prefect Cloud)                │
-│  └─ Monitoring (Datadog/New Relic)               │
-└──────────────────────────────────────────────────┘
-```
+Existe uma DAG Airflow com preparação, tarefa nominal de treino e tarefa nominal de avaliação. A tarefa de treino atual calcula contagens de split e retorna estado, sem invocar `BertTrainer`; avaliação apenas registra esse retorno. Compose descreve API, servidor MLflow, PostgreSQL, Airflow, Prometheus e Grafana. A configuração presente é voltada a desenvolvimento; revisar executor/metadata DB do Airflow, segredos, tags de imagem e dependências da imagem antes de depender da stack.
 
-## Technology Stack Justification
+## Qualidade, reprodutibilidade e segurança
 
-| Layer | Technology | Why Not | Tradeoff |
-|-------|-----------|--------|----------|
-| **Model Training** | PyTorch + Transformers | TensorFlow | PyTorch has better community for NLP |
-| **Experiment Tracking** | MLflow | Wandb | Open-source, no vendor lock-in |
-| **Orchestration** | Prefect | Airflow | Simpler Python API |
-| **Database** | DuckDB | PostgreSQL | OLAP is faster for analytics |
-| **Dashboard** | Streamlit | Dash/Tableau | Code-based, easier versioning |
-| **Deployment** | Docker | K8s | Simpler for small projects |
-| **API** | FastAPI | Flask | Async, automatic docs (OpenAPI) |
+- Python suportado no projeto: `>=3.11,<3.14`.
+- CI de GitHub Actions configura Python 3.11 e executa Ruff, Mypy, pytest e cobertura.
+- Artefatos de dados/modelos são ignorados pelo Git; registrar fonte, hash, versão, divisão e proveniência fora do repositório, de forma segura.
+- Não inserir credenciais em `.env.example`, imagens, notebooks ou logs. Rotacionar qualquer segredo que tenha sido exposto.
+- `torch.load` deve receber apenas checkpoints confiáveis; erros da API não devem revelar detalhes internos em respostas externas.
+- Textos sobre saúde podem conter dados sensíveis; minimizar coleta, retenção e exposição em logs/telemetria.
 
-## Performance Targets
+## Lacunas prioritárias
 
-- **Inference Latency**: < 100ms (p95)
-- **Model Accuracy**: > 92% (3-class)
-- **Throughput**: > 1000 req/sec
-- **Data Pipeline Duration**: < 30 min
+1. Bloquear inferência se não existir checkpoint aprovado e implementar readiness real.
+2. Construir avaliação científica independente: baseline, split imutável, métricas por classe, macro-F1, matriz de confusão, calibração, intervalos de confiança e análise de erro.
+3. Garantir proveniência do dataset, idioma, licenças, consentimento e tratamento de dados sensíveis; não confundir dados sintéticos com reais.
+4. Conectar o DAG ao treinamento e avaliação reais, corrigir configuração Airflow e tornar operações reexecutáveis/idempotentes.
+5. Limitar tamanho de lote/tamanho agregado, executar inferência síncrona fora do event loop e tratar timeouts/erros sem devolver exceções internas.
+6. Definir pinagem de dependências/imagens, segredos externos, controles de acesso, TLS e política operacional antes de qualquer ambiente público.
+7. Só publicar benchmarks após execução controlada com hardware, warm-up, concorrência, tamanho do texto e percentis documentados.
 
-## Security Considerations
+## Componentes explicitamente ausentes
 
-- ✅ Non-root Docker user
-- ✅ Healthchecks for all services
-- ✅ CORS configured
-- ✅ Input validation (Pydantic)
-- ✅ Secrets in .env (not committed)
-- ⚠️ TODO: Rate limiting
-- ⚠️ TODO: Authentication/Authorization
-- ⚠️ TODO: TLS/HTTPS
-
-## Scalability
-
-- **Horizontal**: Multiple API instances behind load balancer
-- **Vertical**: GPU support, batch inference
-- **Caching**: Redis for hot predictions
-- **Async**: FastAPI async handlers, Prefect tasks
+Não foram encontrados fluxos funcionais de Streamlit, Prefect, TorchServe, DuckDB, Great Expectations, Evidently, A/B testing, model registry, alertas, Kubernetes ou implantação em cloud. Menções antigas a essas ferramentas não representam implementação.
