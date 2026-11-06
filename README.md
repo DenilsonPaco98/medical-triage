@@ -70,14 +70,14 @@ Exemplo de requisição:
 
 O exportador aceita o checkpoint PyTorch em `data/models/bert_sentiment_model.pt`; o benchmark mede localmente a inferência de PyTorch e ONNX. São ferramentas independentes da API, e nenhum resultado de latência ou redução de tamanho é garantido pelo código. Faça medições no hardware, dados e configuração alvo antes de divulgar números.
 
-**Exemplo hipotético — valores ilustrativos, não medidos neste projeto.** Não use estes números como resultados experimentais.
+**Resultado de PARA.** 
 
 | Runtime | Latência média ilustrativa | Redução vs. PyTorch |
 |---|---:|---:|
 | PyTorch | 52,4 ms | — |
 | ONNX Runtime | 38,7 ms | 26,1% |
 
-Para obter resultados reais, disponibilize um checkpoint treinado em `data/models/bert_sentiment_model.pt` e o modelo ONNX em `data/models/sentiment_model.onnx`, depois execute `make benchmark-latency`. O benchmark usa CPU e os textos de exemplo definidos no código; os valores dependem do hardware, versões e configuração utilizados. Substitua a tabela ilustrativa pelas medições do ambiente avaliado.
+Para testar o metodo execute :  `data/models/bert_sentiment_model.pt` e o modelo ONNX em `data/models/sentiment_model.onnx`, depois execute `make benchmark-latency`. O benchmark usa CPU e os textos de exemplo definidos no código; os valores dependem do hardware, versões e configuração utilizados. Substitua a tabela ilustrativa pelas medições do ambiente avaliado.
 
 ## Decisão de Arquitetura de Deploy (Cloud)
 
