@@ -70,13 +70,28 @@ Exemplo de requisição:
 
 O exportador aceita o checkpoint PyTorch em `data/models/bert_sentiment_model.pt`; o benchmark mede localmente a inferência de PyTorch e ONNX. São ferramentas independentes da API, e nenhum resultado de latência ou redução de tamanho é garantido pelo código. Faça medições no hardware, dados e configuração alvo antes de divulgar números.
 
+**Exemplo hipotético — valores ilustrativos, não medidos neste projeto.** Não use estes números como resultados experimentais.
+
+| Runtime | Latência média ilustrativa | Redução vs. PyTorch |
+|---|---:|---:|
+| PyTorch | 52,4 ms | — |
+| ONNX Runtime | 38,7 ms | 26,1% |
+
+Para obter resultados reais, disponibilize um checkpoint treinado em `data/models/bert_sentiment_model.pt` e o modelo ONNX em `data/models/sentiment_model.onnx`, depois execute `make benchmark-latency`. O benchmark usa CPU e os textos de exemplo definidos no código; os valores dependem do hardware, versões e configuração utilizados. Substitua a tabela ilustrativa pelas medições do ambiente avaliado.
+
+## Decisão de Arquitetura de Deploy (Cloud)
+
+Como estratégia proposta para uma implantação em nuvem, recomenda-se **AWS com inferência em tempo real**: publicar a API FastAPI como serviço de contêiner (por exemplo, ECS com Fargate, atrás de um Application Load Balancer) para receber previsões sob demanda. Os artefatos do modelo podem ser armazenados no S3 e disponibilizados ao serviço durante o deploy. Essa escolha é uma proposta arquitetural; o repositório atualmente contém uma stack local via Docker Compose e não implementa deploy na AWS.
+
+O cenário em lote (batch) é adequado para reprocessar conjuntos de avaliações periodicamente, sem exigir resposta imediata por requisição; já a API atende consultas individuais em tempo real. Para aprofundar a arquitetura atual do projeto, consulte [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). A documentação `docs/deploy_architecture.md` mencionada em sugestões anteriores não existe neste repositório.
+
 ## Docker Compose e observabilidade
 
 ```bash
 docker compose up --build
 ```
 
-Endereços publicados: API `:8000`, MLflow `:5000`, Airflow `:4200`, Prometheus `:9090`, Grafana `:3000` e PostgreSQL `:5432`. Consulte a configuração do Compose antes do uso: há senhas de desenvolvimento e imagens com tags flutuantes. Troque as credenciais, restrinja exposição de portas e fixe versões antes de qualquer ambiente compartilhado.
+Endereços publicados: API [http://localhost:8000](http://localhost:8000), MLflow [http://localhost:5000](http://localhost:5000), Airflow [http://localhost:4200](http://localhost:4200), Prometheus [http://localhost:9090](http://localhost:9090), Grafana [http://localhost:3000](http://localhost:3000) e PostgreSQL na porta `5432`. No Grafana, as credenciais configuradas para desenvolvimento são `admin` / `admin`; altere-as antes de expor o serviço ou usá-lo em ambiente compartilhado. Abra o dashboard no Grafana para visualizar as métricas provisionadas. Consulte a configuração do Compose antes do uso: há também credenciais de desenvolvimento e imagens com tags flutuantes.
 
 Prometheus coleta `/metrics` da API. O dashboard provisionado do Grafana exibe disponibilidade, volume de requisições/predições e distribuições de latência HTTP/inferência. Métricas técnicas não medem acurácia, deriva de dados nem segurança clínica. A stack é uma configuração local de desenvolvimento, não uma implantação endurecida para produção.
 
